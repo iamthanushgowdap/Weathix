@@ -11,6 +11,7 @@ import { SplashOnboarding } from './src/screens/SplashOnboarding';
 import { Dashboard } from './src/screens/Dashboard';
 import { DetailedForecast } from './src/screens/DetailedForecast';
 import { RadarScreen } from './src/screens/RadarScreen';
+import { MenuBar } from './components/ui/bottom-menu';
 import { AqiScreen } from './src/screens/AqiScreen';
 import { NotificationCenter } from './src/screens/NotificationCenter';
 import { SettingsScreen } from './src/screens/SettingsScreen';
@@ -116,6 +117,83 @@ export default function App() {
   const handleNavPress = (screen: string) => {
     weatherHaptics.selection();
     setCurrentScreen(screen);
+  };
+
+  const menuItems = React.useMemo(() => [
+    {
+      icon: (props: any) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      ),
+      label: "Home"
+    },
+    {
+      icon: (props: any) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="12" r="10" />
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+        </svg>
+      ),
+      label: "Radar Map"
+    },
+    {
+      icon: (props: any) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        </svg>
+      ),
+      label: "AI Insights"
+    },
+    {
+      icon: (props: any) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+        </svg>
+      ),
+      label: "Notifications"
+    },
+    {
+      icon: (props: any) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <rect x="3" y="3" width="7" height="9" />
+          <rect x="14" y="3" width="7" height="5" />
+          <rect x="14" y="12" width="7" height="9" />
+          <rect x="3" y="16" width="7" height="5" />
+        </svg>
+      ),
+      label: "Widgets"
+    },
+    {
+      icon: (props: any) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="4" y1="21" x2="4" y2="14" />
+          <line x1="4" y1="10" x2="4" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12" y2="3" />
+          <line x1="20" y1="21" x2="20" y2="16" />
+          <line x1="20" y1="12" x2="20" y2="3" />
+          <line x1="1" y1="14" x2="7" y2="14" />
+          <line x1="9" y1="8" x2="15" y2="8" />
+          <line x1="17" y1="16" x2="23" y2="16" />
+        </svg>
+      ),
+      label: "Settings"
+    }
+  ], []);
+
+  const handleMenuItemClick = (index: number) => {
+    const screens = [
+      'Home',
+      'Radar Map',
+      'AI Insights',
+      'Notification Center',
+      'Widgets',
+      'Settings'
+    ];
+    handleNavPress(screens[index]);
   };
 
   if (!onboardingComplete) {
@@ -607,6 +685,59 @@ export default function App() {
             animation: webGlassShine 6s linear infinite;
             pointer-events: none;
           }
+
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          .tooltip-content {
+            display: inline-block;
+            white-space: nowrap;
+          }
+          .tooltip-content-wrapper {
+            position: relative;
+            height: 16px;
+            overflow: hidden;
+            animation: fadeIn 150ms ease-out;
+          }
+          .tooltip-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 800ms cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+          [data-state='closed'] {
+            opacity: 0;
+            transition: opacity 150ms ease-out;
+          }
+          [data-state='open'] {
+            opacity: 1;
+            transition: opacity 150ms ease-out, width 800ms cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+          @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-100%); opacity: 0; }
+          }
+          .tooltip-content.slide-in {
+            animation: slideIn 150ms ease-out;
+          }
+          .tooltip-content.slide-out {
+            animation: slideOut 150ms ease-out;
+          }
+          @keyframes slideInUp {
+            from { transform: translateY(-5px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          .tooltip-animation {
+            animation: fadeIn 0.3s ease-in-out, slideInUp 0.3s ease-in-out;
+          }
         ` }} />
 
         <div className="bg-glow"></div>
@@ -691,39 +822,11 @@ export default function App() {
                 </View>
 
                 {/* Layer 5: Glowing Navigation Dock */}
-                {currentScreen === 'Home' && (() => {
-                  const isTabActive = (s: string) => currentScreen === s;
-                  const weatherTheme = weatherData ? mapWeatherCode(weatherData.conditionCode, weatherData.isDay).theme : 'Polar Mist';
-                  const themeAccent = getThemeAccentColor(weatherTheme);
-                  const dockGlowColor = hexToRgba(themeAccent, 0.24);
-
-                  return (
-                    <View style={styles.navDockWrapper}>
-                      <GlassCard borderGlowColor={dockGlowColor} style={styles.glassDock}>
-                        <View style={styles.dockRow}>
-                          <TouchableOpacity onPress={() => handleNavPress('Home')} style={styles.dockTab}>
-                            <Home size={20} color={isTabActive('Home') ? themeAccent : 'rgba(255,255,255,0.4)'} />
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => handleNavPress('Radar Map')} style={styles.dockTab}>
-                            <Compass size={20} color={isTabActive('Radar Map') ? themeAccent : 'rgba(255,255,255,0.4)'} />
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => handleNavPress('AI Insights')} style={styles.dockTab}>
-                            <Sparkles size={20} color={isTabActive('AI Insights') ? themeAccent : 'rgba(255,255,255,0.4)'} />
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => handleNavPress('Notification Center')} style={styles.dockTab}>
-                            <Bell size={20} color={isTabActive('Notification Center') ? themeAccent : 'rgba(255,255,255,0.4)'} />
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => handleNavPress('Widgets')} style={styles.dockTab}>
-                            <Layout size={20} color={isTabActive('Widgets') ? themeAccent : 'rgba(255,255,255,0.4)'} />
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => handleNavPress('Settings')} style={styles.dockTab}>
-                            <Sliders size={20} color={isTabActive('Settings') ? themeAccent : 'rgba(255,255,255,0.4)'} />
-                          </TouchableOpacity>
-                        </View>
-                      </GlassCard>
-                    </View>
-                  );
-                })()}
+                {currentScreen === 'Home' && (
+                  <View style={styles.navDockWrapper}>
+                    <MenuBar items={menuItems} onItemClick={handleMenuItemClick} />
+                  </View>
+                )}
               </div>
             </div>
           </div>
