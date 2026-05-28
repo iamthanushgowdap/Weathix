@@ -92,21 +92,29 @@ const LoadingRadar: React.FC<LoadingRadarProps> = ({ size = 150 }) => {
               fy={centerCoord}
               gradientUnits="userSpaceOnUse"
             >
-              <Stop offset="0%" stopColor="seagreen" stopOpacity={0.8} />
-              <Stop offset="50%" stopColor="seagreen" stopOpacity={0.35} />
+              <Stop offset="0%" stopColor="seagreen" stopOpacity={0.95} />
+              <Stop offset="45%" stopColor="seagreen" stopOpacity={0.6} />
               <Stop offset="100%" stopColor="seagreen" stopOpacity={0} />
             </RadialGradient>
-            <Filter id="blur">
-              <FeGaussianBlur stdDeviation={size * 0.033} />
-            </Filter>
           </Defs>
           
-          {/* Seagreen Glow Sector rotated -55 deg (behind the sweep line) */}
+          {/* Sector 1: 0 to -18 deg (Strongest) */}
           <Path
-            d={`M ${centerCoord} ${centerCoord} L ${size} ${centerCoord} A ${r} ${r} 0 0 0 ${x2} ${y2} Z`}
+            d={`M ${centerCoord} ${centerCoord} L ${size} ${centerCoord} A ${r} ${r} 0 0 0 ${centerCoord + r * 0.9511} ${centerCoord - r * 0.3090} Z`}
             fill="url(#glowGrad)"
-            filter="url(#blur)"
-            opacity={0.85}
+            opacity={0.7}
+          />
+          {/* Sector 2: -18 to -36 deg (Medium) */}
+          <Path
+            d={`M ${centerCoord} ${centerCoord} L ${centerCoord + r * 0.9511} ${centerCoord - r * 0.3090} A ${r} ${r} 0 0 0 ${centerCoord + r * 0.8090} ${centerCoord - r * 0.5878} Z`}
+            fill="url(#glowGrad)"
+            opacity={0.45}
+          />
+          {/* Sector 3: -36 to -54 deg (Weakest) */}
+          <Path
+            d={`M ${centerCoord} ${centerCoord} L ${centerCoord + r * 0.8090} ${centerCoord - r * 0.5878} A ${r} ${r} 0 0 0 ${centerCoord + r * 0.5878} ${centerCoord - r * 0.8090} Z`}
+            fill="url(#glowGrad)"
+            opacity={0.2}
           />
           
           {/* White dashed line */}

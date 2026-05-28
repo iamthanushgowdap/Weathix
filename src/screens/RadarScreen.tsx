@@ -14,6 +14,7 @@ const RadarWebScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
   const { width: windowWidth, height } = useWindowDimensions();
   const width = Platform.OS === 'web' ? 312 : windowWidth;
   const [scale, setScale] = React.useState(1.0);
+  const [isManualOpen, setIsManualOpen] = React.useState(false);
 
   const cx = width / 2;
   const cy = height / 2.3;
@@ -87,14 +88,27 @@ const RadarWebScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
 
             <View style={styles.divider} />
 
-            <View style={styles.instructionsContainer}>
+            <TouchableOpacity 
+              onPress={() => {
+                weatherHaptics.selection();
+                setIsManualOpen(prev => !prev);
+              }}
+              style={styles.collapsibleHeader}
+              activeOpacity={0.7}
+            >
               <Text style={styles.instructionsHeader}>HOW DOPPLER RADAR CALCULATIONS WORK</Text>
-              <Text style={styles.instructionsText}>
-                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Active Sweeper:</Text> Emits radial pulse waves to calculate storm cell distance and precipitation intensity in real-time.{"\n"}
-                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Reflectivity Return:</Text> Faded seagreen trail represents signals bounced back from clouds. Darker greens indicate denser moisture.{"\n"}
-                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Zoom Controls:</Text> Adjust sweep scale. Higher zoom reveals storm micro-structures; lower zoom extends peripheral range.
-              </Text>
-            </View>
+              <Text style={styles.toggleArrow}>{isManualOpen ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+
+            {isManualOpen && (
+              <View style={styles.instructionsContainer}>
+                <Text style={styles.instructionsText}>
+                  • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Active Sweeper:</Text> Emits radial pulse waves to calculate storm cell distance and precipitation intensity in real-time.{"\n"}
+                  • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Reflectivity Return:</Text> Faded seagreen trail represents signals bounced back from clouds. Darker greens indicate denser moisture.{"\n"}
+                  • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Zoom Controls:</Text> Adjust sweep scale. Higher zoom reveals storm micro-structures; lower zoom extends peripheral range.
+                </Text>
+              </View>
+            )}
           </GlassCard>
         </View>
       </View>
@@ -106,6 +120,7 @@ const RadarNativeScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
   const { width: windowWidth, height } = useWindowDimensions();
   const width = Platform.OS === 'web' ? 312 : windowWidth;
   const scale = useSharedValue(1.0);
+  const [isManualOpen, setIsManualOpen] = React.useState(false);
 
   const cx = width / 2;
   const cy = height / 2.3;
@@ -183,14 +198,27 @@ const RadarNativeScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
 
             <View style={styles.divider} />
 
-            <View style={styles.instructionsContainer}>
+            <TouchableOpacity 
+              onPress={() => {
+                weatherHaptics.selection();
+                setIsManualOpen(prev => !prev);
+              }}
+              style={styles.collapsibleHeader}
+              activeOpacity={0.7}
+            >
               <Text style={styles.instructionsHeader}>HOW DOPPLER RADAR CALCULATIONS WORK</Text>
-              <Text style={styles.instructionsText}>
-                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Active Sweeper:</Text> Emits radial pulse waves to calculate storm cell distance and precipitation intensity in real-time.{"\n"}
-                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Reflectivity Return:</Text> Faded seagreen trail represents signals bounced back from clouds. Darker greens indicate denser moisture.{"\n"}
-                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Zoom Controls:</Text> Adjust sweep scale. Higher zoom reveals storm micro-structures; lower zoom extends peripheral range.
-              </Text>
-            </View>
+              <Text style={styles.toggleArrow}>{isManualOpen ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+
+            {isManualOpen && (
+              <View style={styles.instructionsContainer}>
+                <Text style={styles.instructionsText}>
+                  • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Active Sweeper:</Text> Emits radial pulse waves to calculate storm cell distance and precipitation intensity in real-time.{"\n"}
+                  • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Reflectivity Return:</Text> Faded seagreen trail represents signals bounced back from clouds. Darker greens indicate denser moisture.{"\n"}
+                  • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Zoom Controls:</Text> Adjust sweep scale. Higher zoom reveals storm micro-structures; lower zoom extends peripheral range.
+                </Text>
+              </View>
+            )}
           </GlassCard>
         </View>
       </View>
@@ -313,15 +341,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginVertical: 12,
   },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  toggleArrow: {
+    color: '#22D3EE',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   instructionsContainer: {
-    marginTop: 2,
+    marginTop: 10,
   },
   instructionsHeader: {
     color: 'rgba(255, 255, 255, 0.4)',
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 6,
   },
   instructionsText: {
     color: 'rgba(255, 255, 255, 0.7)',
@@ -330,5 +368,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
 
 

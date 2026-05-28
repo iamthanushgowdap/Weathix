@@ -31,7 +31,12 @@ const LoadingRadar: React.FC<LoadingRadarProps> = ({ size = 150 }) => {
       />
 
       {/* radar sweep */}
-      <span className="absolute top-1/2 left-1/2 w-1/2 h-full bg-transparent origin-top-left border-t border-dashed border-white animate-[radar81_2s_linear_infinite]">
+      <span 
+        className="absolute top-1/2 left-1/2 w-1/2 h-full bg-transparent origin-top-left border-t border-dashed border-white"
+        style={{
+          animation: "radar81 2s linear infinite"
+        }}
+      >
         <span className="absolute top-0 left-0 w-full h-full bg-[seagreen] origin-top-left rotate-[-55deg] blur-[30px] drop-shadow-[20px_20px_20px_seagreen]" />
       </span>
 
