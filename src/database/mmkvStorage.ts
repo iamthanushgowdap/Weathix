@@ -4,7 +4,7 @@
 const getPlatformOS = (): string => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('react-native').getPlatformOS() as string;
+    return require('react-native').Platform.OS as string;
   } catch {
     return 'native';
   }

@@ -161,28 +161,26 @@ export const useWeatherStore = create<GlobalState>((set, get) => ({
   requestDeviceLocation: async () => {
     set({ isLoading: true });
 
-    // 1. Web Geolocation Emulator (Secure, fuzzed)
+    // 1. Web Geolocation Emulator (Exact coordinates)
     if (getPlatformOS() === 'web') {
       if (typeof navigator !== 'undefined' && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
             const { latitude, longitude } = position.coords;
-            const fuzzedLat = Math.round(latitude * 1000) / 1000;
-            const fuzzedLon = Math.round(longitude * 1000) / 1000;
 
             // Reverse geocode to get real neighbourhood/city name
-            const place = await openMeteoService.reverseGeocode(fuzzedLat, fuzzedLon);
+            const place = await openMeteoService.reverseGeocode(latitude, longitude);
 
-            const fuzzedCity: CityInfo = {
-              id: `current-location-${fuzzedLat}-${fuzzedLon}`,
+            const exactCity: CityInfo = {
+              id: `current-location-${latitude}-${longitude}`,
               name: `📍 ${place.name}`,
               country: place.country || 'Local',
-              latitude: fuzzedLat,
-              longitude: fuzzedLon,
+              latitude: latitude,
+              longitude: longitude,
               admin1: place.admin1,
             };
-            set({ selectedCity: fuzzedCity });
-            mmkvStorage.setObject('selected-city', fuzzedCity);
+            set({ selectedCity: exactCity });
+            mmkvStorage.setObject('selected-city', exactCity);
             await get().fetchWeather();
           },
           async (error) => {
@@ -206,30 +204,25 @@ export const useWeatherStore = create<GlobalState>((set, get) => ({
       }
 
       const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,  // Satellite GPS — much more accurate than cell tower
+        accuracy: Location.Accuracy.Highest,  // Best possible accuracy (GPS / Satellite)
       });
 
       const { latitude, longitude } = location.coords;
 
-      // Round to 3 decimal places (~111m precision) — good balance of privacy + accuracy
-      // (was 2 decimal places = 1.1km which caused the "7km off" issue)
-      const fuzzedLat = Math.round(latitude * 1000) / 1000;
-      const fuzzedLon = Math.round(longitude * 1000) / 1000;
-
       // Reverse geocode to get real neighbourhood/city name (e.g. "Jayanagar", "Koramangala")
-      const place = await openMeteoService.reverseGeocode(fuzzedLat, fuzzedLon);
+      const place = await openMeteoService.reverseGeocode(latitude, longitude);
 
-      const fuzzedCity: CityInfo = {
-        id: `current-location-${fuzzedLat}-${fuzzedLon}`,
+      const exactCity: CityInfo = {
+        id: `current-location-${latitude}-${longitude}`,
         name: `📍 ${place.name}`,
         country: place.country || 'IN',
-        latitude: fuzzedLat,
-        longitude: fuzzedLon,
+        latitude: latitude,
+        longitude: longitude,
         admin1: place.admin1,
       };
 
-      set({ selectedCity: fuzzedCity });
-      mmkvStorage.setObject('selected-city', fuzzedCity);
+      set({ selectedCity: exactCity });
+      mmkvStorage.setObject('selected-city', exactCity);
       await get().fetchWeather();
     } catch (err) {
       console.warn('[Weathix Geolocation] Secure Native locator failed. Defaulting silently.', err);

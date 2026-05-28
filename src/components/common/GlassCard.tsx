@@ -23,12 +23,12 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   const gyro = useGyroscopeParallax(8, 8); // Track physical gyroscope tilts
   const glassShader = getShader('glassRefraction');
 
-  // Parallax tilt interpolation for the card container itself
+  // Parallax tilt interpolation for the card container itself - disabled to prevent card shaking/movement
   const cardAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
-        { translateX: gyro.x.value },
-        { translateY: gyro.y.value },
+        { translateX: 0 },
+        { translateY: 0 },
       ],
     };
   });

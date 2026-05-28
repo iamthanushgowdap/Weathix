@@ -13,14 +13,14 @@ import { DetailedForecast } from './src/screens/DetailedForecast';
 import { RadarScreen } from './src/screens/RadarScreen';
 import { MenuBar } from './components/ui/bottom-menu';
 import { AqiScreen } from './src/screens/AqiScreen';
-import { NotificationCenter } from './src/screens/NotificationCenter';
+
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { AiDashboard } from './src/screens/AiDashboard';
 import { CityCompareScreen } from './src/screens/CityCompareScreen';
-import { WidgetCustomizer } from './src/screens/WidgetCustomizer';
+import { AboutScreen } from './src/screens/AboutScreen';
 import { GlassCard } from './src/components/common/GlassCard';
 import { weatherHaptics } from './src/sensors/useHaptics';
-import { Home, Sliders, Bell, Sparkles, Layout, Compass } from 'lucide-react-native';
+import { Home, Sliders, Sparkles, Compass, Info } from 'lucide-react-native';
 
 const getSkyGradientString = (selectedTheme: string): string => {
   switch (selectedTheme) {
@@ -31,7 +31,7 @@ const getSkyGradientString = (selectedTheme: string): string => {
       return `radial-gradient(circle at top right, rgba(255, 255, 255, 0.1) 0%, transparent 30%), linear-gradient(180deg, #1E1B4B 0%, #0A0E1A 50%, #180E24 100%)`;
 
     case 'Desert Gold':
-      return `radial-gradient(circle at top left, #fff4c4 0%, transparent 30%), linear-gradient(180deg, #FFD84D 0%, #FFB36B 45%, #F6C7E2 100%)`;
+      return `radial-gradient(circle at top right, #FFC97A 0%, transparent 40%), linear-gradient(180deg, #FFAC1C 0%, #FF8C42 50%, #FFC97A 100%)`;
 
     case 'Monsoon Slate':
       return `radial-gradient(circle at top left, rgba(255, 255, 255, 0.1) 0%, transparent 25%), linear-gradient(180deg, #475569 0%, #1E293B 50%, #0F172A 100%)`;
@@ -146,25 +146,16 @@ export default function App() {
       ),
       label: "AI Insights"
     },
+
     {
       icon: (props: any) => (
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
         </svg>
       ),
-      label: "Notifications"
-    },
-    {
-      icon: (props: any) => (
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-          <rect x="3" y="3" width="7" height="9" />
-          <rect x="14" y="3" width="7" height="5" />
-          <rect x="14" y="12" width="7" height="9" />
-          <rect x="3" y="16" width="7" height="5" />
-        </svg>
-      ),
-      label: "Widgets"
+      label: "About"
     },
     {
       icon: (props: any) => (
@@ -189,8 +180,7 @@ export default function App() {
       'Home',
       'Radar Map',
       'AI Insights',
-      'Notification Center',
-      'Widgets',
+      'About',
       'Settings'
     ];
     handleNavPress(screens[index]);
@@ -216,8 +206,7 @@ export default function App() {
         return <RadarScreen onBack={() => setCurrentScreen('Home')} />;
       case 'AQI Details':
         return <AqiScreen onBack={() => setCurrentScreen('Home')} />;
-      case 'Notification Center':
-        return <NotificationCenter onBack={() => setCurrentScreen('Home')} />;
+
       case 'Settings':
         return (
           <SettingsScreen
@@ -232,8 +221,8 @@ export default function App() {
         return <AiDashboard onBack={() => setCurrentScreen('Home')} />;
       case 'Compare':
         return <CityCompareScreen onBack={() => setCurrentScreen('Home')} />;
-      case 'Widgets':
-        return <WidgetCustomizer onBack={() => setCurrentScreen('Home')} />;
+      case 'About':
+        return <AboutScreen onBack={() => setCurrentScreen('Home')} />;
       default:
         return <Dashboard onNavigate={setCurrentScreen} />;
     }
@@ -823,9 +812,21 @@ export default function App() {
 
                 {/* Layer 5: Glowing Navigation Dock */}
                 {currentScreen === 'Home' && (
-                  <View style={styles.navDockWrapper}>
-                    <MenuBar items={menuItems} onItemClick={handleMenuItemClick} />
-                  </View>
+                  <div
+                    style={styles.navDockWrapper as any}
+                    onClick={(e) => {
+                      const button = (e.target as HTMLElement).closest('button');
+                      if (button && button.parentElement) {
+                        const buttons = Array.from(button.parentElement.querySelectorAll('button'));
+                        const index = buttons.indexOf(button);
+                        if (index !== -1) {
+                          handleMenuItemClick(index);
+                        }
+                      }
+                    }}
+                  >
+                    <MenuBar items={menuItems} />
+                  </div>
                 )}
               </div>
             </div>
@@ -919,11 +920,9 @@ export default function App() {
                   <TouchableOpacity onPress={() => handleNavPress('AI Insights')} style={styles.dockTab}>
                     <Sparkles size={22} color={isTabActive('AI Insights') ? themeAccent : 'rgba(255,255,255,0.4)'} />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleNavPress('Notification Center')} style={styles.dockTab}>
-                    <Bell size={22} color={isTabActive('Notification Center') ? themeAccent : 'rgba(255,255,255,0.4)'} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleNavPress('Widgets')} style={styles.dockTab}>
-                    <Layout size={22} color={isTabActive('Widgets') ? themeAccent : 'rgba(255,255,255,0.4)'} />
+
+                  <TouchableOpacity onPress={() => handleNavPress('About')} style={styles.dockTab}>
+                    <Info size={22} color={isTabActive('About') ? themeAccent : 'rgba(255,255,255,0.4)'} />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleNavPress('Settings')} style={styles.dockTab}>
                     <Sliders size={22} color={isTabActive('Settings') ? themeAccent : 'rgba(255,255,255,0.4)'} />

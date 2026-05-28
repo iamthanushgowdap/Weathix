@@ -23,7 +23,7 @@ interface CityCompareScreenProps {
 export const CityCompareScreen: React.FC<CityCompareScreenProps> = ({ onBack }) => {
   const { width: windowWidth } = useWindowDimensions();
   const width = Platform.OS === 'web' ? 312 : windowWidth;
-  const { selectedCity, weatherData, aqiData, tempUnit } = useWeatherStore();
+  const { selectedCity, weatherData, aqiData, tempUnit, windUnit } = useWeatherStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<CityInfo[]>([]);
@@ -86,6 +86,16 @@ export const CityCompareScreen: React.FC<CityCompareScreenProps> = ({ onBack }) 
       return `${Math.round((c * 9) / 5 + 32)}°F`;
     }
     return `${c}°C`;
+  };
+
+  const formatWindSpeed = (speedKph: number) => {
+    if (windUnit === 'mph') {
+      return `${Math.round(speedKph * 0.621371)} mph`;
+    }
+    if (windUnit === 'mps') {
+      return `${Math.round(speedKph * 0.277778 * 10) / 10} m/s`;
+    }
+    return `${speedKph} km/h`;
   };
 
   const getAqiColor = (aqi: number): string => {
@@ -243,7 +253,7 @@ export const CityCompareScreen: React.FC<CityCompareScreenProps> = ({ onBack }) 
               {/* WIND SPEED */}
               <View style={styles.compareRow}>
                 <View style={styles.compareCol}>
-                  <Text style={styles.compareValue}>{weatherData.windSpeed} km/h {getWindEmoji(weatherData.windSpeed)}</Text>
+                  <Text style={styles.compareValue}>{formatWindSpeed(weatherData.windSpeed)} {getWindEmoji(weatherData.windSpeed)}</Text>
                   <Text style={styles.compareLabel}>Velocity</Text>
                 </View>
                 <View style={styles.compareCenterCol}>
@@ -251,7 +261,7 @@ export const CityCompareScreen: React.FC<CityCompareScreenProps> = ({ onBack }) 
                   <Text style={styles.compareTitle}>WIND VELOCITY</Text>
                 </View>
                 <View style={styles.compareCol}>
-                  <Text style={styles.compareValue}>{compareWeather.windSpeed} km/h {getWindEmoji(compareWeather.windSpeed)}</Text>
+                  <Text style={styles.compareValue}>{formatWindSpeed(compareWeather.windSpeed)} {getWindEmoji(compareWeather.windSpeed)}</Text>
                   <Text style={styles.compareLabel}>Velocity</Text>
                 </View>
               </View>

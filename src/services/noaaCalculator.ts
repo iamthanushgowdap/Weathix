@@ -139,9 +139,9 @@ export function getSkyColorsForSolarElevation(
       break;
 
     case 'Desert Gold':
-      // Orange for Sunny Day / Clear. Indigo for Clear Night.
-      colors = isNightTime ? ['#020205', '#0A0E1A', '#180E24'] : ['#FFD84D', '#FFB36B', '#F6C7E2'];
-      ambientGlow = '#FB923C';
+      // Always warm orange/golden — Clear Sky is always sunny, never dark
+      colors = ['#FFAC1C', '#FF8C42', '#FFC97A'];
+      ambientGlow = '#FF8C00';
       skyBlur = 18;
       break;
 

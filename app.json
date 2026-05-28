@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Weathix",
-    "slug": "Weathix",
+    "slug": "weathix",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,8 +22,11 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ]
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.iamthanushgowdapsorganization.weathix"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,6 +39,12 @@
           "locationAlwaysAndWhenInUsePermission": "Weathix uses your location fuzzed to 1km resolution to securely display local climate forecasts."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "87995555-3dc5-476d-aed2-38863200bc7e"
+      }
+    },
+    "owner": "iamthanushgowdaps-organization"
   }
 }

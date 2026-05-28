@@ -10,13 +10,223 @@ import {
   Platform,
 } from 'react-native';
 import { useWeatherStore } from '../store/globalStore';
-import { GlassCard } from '../components/common/GlassCard';
-import { PremiumButton } from '../components/common/PremiumButton';
 import { computeWardrobeIntelligence } from '../services/localWardrobeAI';
 import { dbOperations } from '../database/sqliteDb';
 import { weatherHaptics } from '../sensors/useHaptics';
-import { ArrowLeft, Sparkles, BookOpen, Smile, PenTool, CheckCircle, Sun, Wind, Droplet } from 'lucide-react-native';
+import { PremiumButton } from '../components/common/PremiumButton';
+import {
+  ArrowLeft,
+  Sparkles,
+  BookOpen,
+  CheckCircle,
+  Sun,
+  Wind,
+  Droplet,
+  AlertTriangle,
+  Info,
+  AlertCircle,
+  ShieldCheck,
+  Zap,
+  Thermometer,
+  Eye,
+} from 'lucide-react-native';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Native Alert Card Design System (mirrors alert-1.tsx for React Native)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type AlertVariant = 'primary' | 'success' | 'warning' | 'destructive' | 'info' | 'secondary';
+
+interface NativeAlertProps {
+  variant?: AlertVariant;
+  icon?: React.ReactNode;
+  title: string;
+  description?: string;
+  badge?: string;
+}
+
+const ALERT_THEME: Record<AlertVariant, {
+  bg: string;
+  border: string;
+  iconColor: string;
+  titleColor: string;
+  descColor: string;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeText: string;
+}> = {
+  primary: {
+    bg: '#EFF6FF',
+    border: '#BFDBFE',
+    iconColor: '#2563EB',
+    titleColor: '#1E3A5F',
+    descColor: '#374151',
+    badgeBg: '#DBEAFE',
+    badgeBorder: '#93C5FD',
+    badgeText: '#1D4ED8',
+  },
+  success: {
+    bg: '#F0FDF4',
+    border: '#BBF7D0',
+    iconColor: '#16A34A',
+    titleColor: '#14532D',
+    descColor: '#374151',
+    badgeBg: '#DCFCE7',
+    badgeBorder: '#86EFAC',
+    badgeText: '#15803D',
+  },
+  warning: {
+    bg: '#FFFBEB',
+    border: '#FDE68A',
+    iconColor: '#D97706',
+    titleColor: '#78350F',
+    descColor: '#374151',
+    badgeBg: '#FEF3C7',
+    badgeBorder: '#FCD34D',
+    badgeText: '#B45309',
+  },
+  destructive: {
+    bg: '#FFF1F2',
+    border: '#FECDD3',
+    iconColor: '#DC2626',
+    titleColor: '#7F1D1D',
+    descColor: '#374151',
+    badgeBg: '#FFE4E6',
+    badgeBorder: '#FDA4AF',
+    badgeText: '#BE123C',
+  },
+  info: {
+    bg: '#F5F3FF',
+    border: '#DDD6FE',
+    iconColor: '#7C3AED',
+    titleColor: '#2E1065',
+    descColor: '#374151',
+    badgeBg: '#EDE9FE',
+    badgeBorder: '#C4B5FD',
+    badgeText: '#6D28D9',
+  },
+  secondary: {
+    bg: '#F9FAFB',
+    border: '#E5E7EB',
+    iconColor: '#6B7280',
+    titleColor: '#111827',
+    descColor: '#374151',
+    badgeBg: '#F3F4F6',
+    badgeBorder: '#D1D5DB',
+    badgeText: '#374151',
+  },
+};
+
+const NativeAlert: React.FC<NativeAlertProps> = ({
+  variant = 'secondary',
+  icon,
+  title,
+  description,
+  badge,
+}) => {
+  const t = ALERT_THEME[variant];
+  return (
+    <View style={[alertStyles.card, { backgroundColor: t.bg, borderColor: t.border }]}>
+      <View style={[alertStyles.iconWrap, { backgroundColor: t.badgeBg }]}>
+        {React.isValidElement(icon)
+          ? React.cloneElement(icon as React.ReactElement<any>, { color: t.iconColor, size: 20 })
+          : icon}
+      </View>
+      <View style={alertStyles.content}>
+        <View style={alertStyles.titleRow}>
+          <Text style={[alertStyles.title, { color: t.titleColor }]}>{title}</Text>
+          {badge ? (
+            <View style={[alertStyles.badge, { backgroundColor: t.badgeBg, borderColor: t.badgeBorder }]}>
+              <Text style={[alertStyles.badgeText, { color: t.badgeText }]}>{badge}</Text>
+            </View>
+          ) : null}
+        </View>
+        {description ? (
+          <Text style={[alertStyles.description, { color: t.descColor }]}>{description}</Text>
+        ) : null}
+      </View>
+    </View>
+  );
+};
+
+const alertStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    gap: 12,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  content: {
+    flex: 1,
+    gap: 4,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: '700',
+    flexShrink: 1,
+  },
+  badge: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  description: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Section Header
+// ─────────────────────────────────────────────────────────────────────────────
+const SectionHeader: React.FC<{ label: string }> = ({ label }) => (
+  <Text style={styles.sectionTitle}>{label}</Text>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Activity Bar Row
+// ─────────────────────────────────────────────────────────────────────────────
+const ActivityBar: React.FC<{ label: string; value: number; color: string }> = ({ label, value, color }) => (
+  <View style={styles.activityRow}>
+    <View style={styles.activityMeta}>
+      <Text style={styles.activityName}>{label}</Text>
+      <Text style={[styles.activityValue, { color }]}>{value}/10</Text>
+    </View>
+    <View style={styles.activityBarBg}>
+      <View style={[styles.activityBarFill, { width: `${value * 10}%`, backgroundColor: color }]} />
+    </View>
+  </View>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Screen
+// ─────────────────────────────────────────────────────────────────────────────
 interface AiDashboardProps {
   onBack: () => void;
 }
@@ -24,19 +234,22 @@ interface AiDashboardProps {
 export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
   const { weatherData, aqiData } = useWeatherStore();
   const [diaryNote, setDiaryNote] = useState('');
-  const [moodScore, setMoodScore] = useState(3); // 1 to 5 scale
+  const [moodScore, setMoodScore] = useState(3);
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    // Load existing journal records on mount
     setJournalEntries(dbOperations.getJournalEntries());
   }, []);
 
   if (!weatherData || !aqiData) return null;
 
-  // Compute local AI recommendations
-  const cloudDensityVal = weatherData.conditionText.toLowerCase().includes('cloud') ? 0.75 : weatherData.conditionText.toLowerCase().includes('rain') ? 0.9 : 0;
+  const cloudDensityVal = weatherData.conditionText.toLowerCase().includes('cloud')
+    ? 0.75
+    : weatherData.conditionText.toLowerCase().includes('rain')
+    ? 0.9
+    : 0;
+
   const ai = computeWardrobeIntelligence(
     weatherData.temp,
     weatherData.hourly.rainProb[0] || 0,
@@ -51,16 +264,7 @@ export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
   const handleSaveJournal = () => {
     if (!diaryNote.trim()) return;
     weatherHaptics.selection();
-    
-    // Save to SQLite
-    dbOperations.saveJournalEntry(
-      weatherData.conditionText,
-      weatherData.temp,
-      moodScore,
-      diaryNote
-    );
-
-    // Refresh list & reset inputs
+    dbOperations.saveJournalEntry(weatherData.conditionText, weatherData.temp, moodScore, diaryNote);
     setJournalEntries(dbOperations.getJournalEntries());
     setDiaryNote('');
     setMoodScore(3);
@@ -73,186 +277,152 @@ export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
     return emojis[score - 1] || '😐';
   };
 
+  // Derive dynamic alert messages from AI data
+  const uvAlertVariant = weatherData.uvIndex >= 8 ? 'destructive' : weatherData.uvIndex >= 5 ? 'warning' : 'success';
+  const aqiAlertVariant = aqiData.aqi >= 150 ? 'destructive' : aqiData.aqi >= 100 ? 'warning' : aqiData.aqi >= 51 ? 'info' : 'success';
+  const rainAlertVariant = (weatherData.hourly.rainProb[0] || 0) >= 70 ? 'destructive' : (weatherData.hourly.rainProb[0] || 0) >= 40 ? 'warning' : 'success';
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1 }}
-    >
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      {/* Solid white background — no theme sky bleeding */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={styles.solidBg} />
+      </View>
+
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        {/* Header back strip */}
+
+        {/* ── Header ── */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-            <ArrowLeft color="#FFF" size={24} />
+            <ArrowLeft color="#1E293B" size={22} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>AI INSIGHTS CENTER</Text>
+          <View>
+            <Text style={styles.headerTitle}>AI INSIGHTS CENTER</Text>
+            <Text style={styles.headerSub}>Personalised atmospheric intelligence</Text>
+          </View>
         </View>
 
-        {/* ========================================================
-            OUTDOOR ACTIVITIES RATINGS BAR CHART
-            ======================================================== */}
-        <Text style={styles.sectionTitle}>OUTDOOR SUITABILITY INDEX</Text>
-        <View style={styles.marginGap}>
-          <GlassCard borderGlowColor="rgba(168, 85, 247, 0.22)">
-            {/* Jogging */}
-            <View style={styles.activityRow}>
-              <View style={styles.activityMeta}>
-                <Text style={styles.activityName}>Jogging Conditions</Text>
-                <Text style={styles.activityValue}>{ai.activities.jogging}/10</Text>
-              </View>
-              <View style={styles.activityBarBg}>
-                <View style={[styles.activityBarFill, { width: `${ai.activities.jogging * 10}%`, backgroundColor: '#A855F7' }]} />
-              </View>
-            </View>
-
-            {/* Cycling */}
-            <View style={[styles.activityRow, { marginTop: 14 }]}>
-              <View style={styles.activityMeta}>
-                <Text style={styles.activityName}>Cycling / Commuting</Text>
-                <Text style={styles.activityValue}>{ai.activities.cycling}/10</Text>
-              </View>
-              <View style={styles.activityBarBg}>
-                <View style={[styles.activityBarFill, { width: `${ai.activities.cycling * 10}%`, backgroundColor: '#22D3EE' }]} />
-              </View>
-            </View>
-
-            {/* Landscape Photography */}
-            <View style={[styles.activityRow, { marginTop: 14 }]}>
-              <View style={styles.activityMeta}>
-                <Text style={styles.activityName}>Photography Golden Hour</Text>
-                <Text style={styles.activityValue}>{ai.activities.photography}/10</Text>
-              </View>
-              <View style={styles.activityBarBg}>
-                <View style={[styles.activityBarFill, { width: `${ai.activities.photography * 10}%`, backgroundColor: '#EC4899' }]} />
-              </View>
-            </View>
-
-            {/* Stargazing */}
-            <View style={[styles.activityRow, { marginTop: 14 }]}>
-              <View style={styles.activityMeta}>
-                <Text style={styles.activityName}>Night Stargazing Clarity</Text>
-                <Text style={styles.activityValue}>{ai.activities.stargazing}/10</Text>
-              </View>
-              <View style={styles.activityBarBg}>
-                <View style={[styles.activityBarFill, { width: `${ai.activities.stargazing * 10}%`, backgroundColor: '#F59E0B' }]} />
-              </View>
-            </View>
-          </GlassCard>
+        {/* ═══════════════════════════════════════════════════════════
+            LIVE CONDITION ALERTS  (Alert Card System)
+        ═══════════════════════════════════════════════════════════ */}
+        <SectionHeader label="LIVE CONDITION ALERTS" />
+        <View style={styles.section}>
+          <NativeAlert
+            variant={uvAlertVariant as AlertVariant}
+            icon={<Sun />}
+            title="UV Radiation Index"
+            description={ai.uvAdvice}
+            badge={`UV ${weatherData.uvIndex}`}
+          />
+          <NativeAlert
+            variant={aqiAlertVariant as AlertVariant}
+            icon={<Eye />}
+            title="Air Quality Status"
+            description={`AQI reads ${aqiData.aqi} — ${aqiData.aqi >= 150 ? 'Unhealthy: limit outdoor exposure.' : aqiData.aqi >= 100 ? 'Sensitive groups should reduce activity.' : aqiData.aqi >= 51 ? 'Moderate air quality today.' : 'Air quality is good — enjoy outdoors!'}`}
+            badge={`AQI ${aqiData.aqi}`}
+          />
+          <NativeAlert
+            variant={rainAlertVariant as AlertVariant}
+            icon={<Droplet />}
+            title="Precipitation Forecast"
+            description={`${weatherData.hourly.rainProb[0] || 0}% probability next hour. ${(weatherData.hourly.rainProb[0] || 0) >= 70 ? 'Take an umbrella — rain is very likely.' : (weatherData.hourly.rainProb[0] || 0) >= 40 ? 'Carry a light jacket just in case.' : 'Skies look clear — no rain expected.'}`}
+            badge={`${weatherData.hourly.rainProb[0] || 0}% Rain`}
+          />
+          <NativeAlert
+            variant="info"
+            icon={<Thermometer />}
+            title="Feels-Like Temperature"
+            description={`Current conditions feel like ${weatherData.feelsLike ?? weatherData.temp}°C. ${ai.layers[0] ?? 'Dress comfortably for today.'}`}
+            badge={`${weatherData.feelsLike ?? weatherData.temp}°C`}
+          />
         </View>
 
-        {/* ========================================================
-            SLEEP COMFORT DIAGNOSTICS WIDGET
-            ======================================================== */}
-        <Text style={[styles.sectionTitle, styles.marginGap]}>SLEEP QUALITY METRIC</Text>
-        <View style={styles.marginGap}>
-          <GlassCard borderGlowColor="rgba(34, 211, 238, 0.22)">
-            <View style={styles.sleepMetricsRow}>
-              <View style={styles.sleepScoreBadge}>
-                <Text style={styles.sleepScoreNumber}>{ai.sleepComfortIndex.score}</Text>
-                <Text style={styles.sleepScoreLabel}>Index</Text>
-              </View>
-              <View style={styles.sleepTextCol}>
-                <Text style={styles.sleepTitle}>BEDROOM COMFORT LEVEL</Text>
-                <Text style={styles.sleepRecommendation}>{ai.sleepComfortIndex.recommendation}</Text>
-              </View>
-            </View>
-          </GlassCard>
+        {/* ═══════════════════════════════════════════════════════════
+            OUTDOOR SUITABILITY INDEX
+        ═══════════════════════════════════════════════════════════ */}
+        <SectionHeader label="OUTDOOR SUITABILITY INDEX" />
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <ActivityBar label="Jogging Conditions" value={ai.activities.jogging} color="#7C3AED" />
+            <View style={styles.activityDivider} />
+            <ActivityBar label="Cycling / Commuting" value={ai.activities.cycling} color="#0EA5E9" />
+            <View style={styles.activityDivider} />
+            <ActivityBar label="Photography Golden Hour" value={ai.activities.photography} color="#EC4899" />
+            <View style={styles.activityDivider} />
+            <ActivityBar label="Night Stargazing Clarity" value={ai.activities.stargazing} color="#F59E0B" />
+          </View>
         </View>
 
-        {/* ========================================================
-            WARDROBE INTELLIGENCE & AESTHETIC VIBE
-            ======================================================== */}
-        <Text style={[styles.sectionTitle, styles.marginGap]}>WARDROBE INTELLIGENCE</Text>
-        <View style={styles.marginGap}>
-          <GlassCard borderGlowColor="rgba(255,255,255,0.06)">
-            <View style={styles.wardrobeHeader}>
-              <Sparkles size={16} color="#A855F7" />
-              <Text style={styles.wardrobeTitle}>RECOMMENDED LAYERING STRATEGY</Text>
-            </View>
-            
-            <View style={styles.vibeBadge}>
-              <Text style={styles.vibeBadgeLabel}>STYLE THEME</Text>
-              <Text style={styles.vibeBadgeValue}>{ai.aestheticVibe}</Text>
-            </View>
-
-            {ai.layers.map((layer, index) => (
-              <View key={index} style={styles.layerCard}>
-                <Text style={styles.layerNumber}>LAYER {index + 1}</Text>
-                <Text style={styles.layerText}>{layer}</Text>
-              </View>
-            ))}
-          </GlassCard>
+        {/* ═══════════════════════════════════════════════════════════
+            WARDROBE & BIO-SHIELD ALERTS
+        ═══════════════════════════════════════════════════════════ */}
+        <SectionHeader label="WARDROBE INTELLIGENCE" />
+        <View style={styles.section}>
+          <NativeAlert
+            variant="primary"
+            icon={<Sparkles />}
+            title={`Style Theme · ${ai.aestheticVibe}`}
+            description={ai.layers.join(' → ')}
+          />
+          <NativeAlert
+            variant={ai.hairFrizz.level === 'High' || ai.hairFrizz.level === 'Very High' ? 'warning' : 'secondary'}
+            icon={<Wind />}
+            title="Follicle Frizz Exposure"
+            description={ai.hairFrizz.tip}
+            badge={`${ai.hairFrizz.level} · ${ai.hairFrizz.percent}%`}
+          />
+          <NativeAlert
+            variant={ai.skinHydration.level === 'Parched' || ai.skinHydration.level === 'Dry' ? 'warning' : 'success'}
+            icon={<Droplet />}
+            title="Transepidermal Hydration"
+            description={ai.skinHydration.tip}
+            badge={ai.skinHydration.level}
+          />
         </View>
 
-        {/* ========================================================
-            BIO-ATMOSPHERIC DEFENSE SYSTEMS
-            ======================================================== */}
-        <Text style={[styles.sectionTitle, styles.marginGap]}>BIO-ATMOSPHERIC SHIELD</Text>
-        <View style={styles.marginGap}>
-          <GlassCard borderGlowColor="rgba(34, 211, 238, 0.22)">
-            {/* Actinic UV Shielding */}
-            <View style={styles.bioMetricItem}>
-              <View style={styles.bioMetricHeader}>
-                <Sun size={16} color="#F59E0B" />
-                <Text style={[styles.bioMetricTitle, { color: '#F59E0B' }]}>DERMAL UV SUN-SHIELD</Text>
-              </View>
-              <Text style={styles.bioMetricValue}>{ai.uvAdvice}</Text>
+        {/* ═══════════════════════════════════════════════════════════
+            SLEEP QUALITY
+        ═══════════════════════════════════════════════════════════ */}
+        <SectionHeader label="SLEEP QUALITY METRIC" />
+        <View style={styles.section}>
+          <View style={[styles.card, styles.sleepRow]}>
+            <View style={styles.sleepScoreBadge}>
+              <Text style={styles.sleepScoreNumber}>{ai.sleepComfortIndex.score}</Text>
+              <Text style={styles.sleepScoreLabel}>INDEX</Text>
             </View>
-
-            <View style={styles.dividerLine} />
-
-            {/* Hair Frizz Index */}
-            <View style={styles.bioMetricItem}>
-              <View style={styles.bioMetricHeader}>
-                <Wind size={16} color="#A855F7" />
-                <Text style={[styles.bioMetricTitle, { color: '#A855F7' }]}>FOLLICLE FRIZZ EXPOSURE</Text>
-                <Text style={styles.bioMetricBadge}>{ai.hairFrizz.level} ({ai.hairFrizz.percent}%)</Text>
-              </View>
-              <Text style={styles.bioMetricValue}>{ai.hairFrizz.tip}</Text>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={styles.sleepTitle}>BEDROOM COMFORT LEVEL</Text>
+              <Text style={styles.sleepRec}>{ai.sleepComfortIndex.recommendation}</Text>
             </View>
-
-            <View style={styles.dividerLine} />
-
-            {/* Skin Hydration Index */}
-            <View style={styles.bioMetricItem}>
-              <View style={styles.bioMetricHeader}>
-                <Droplet size={16} color="#38BDF8" />
-                <Text style={[styles.bioMetricTitle, { color: '#38BDF8' }]}>TRANSEPI-DERMAL HYDRATION</Text>
-                <Text style={[styles.bioMetricBadge, { color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.3)' }]}>
-                  {ai.skinHydration.level}
-                </Text>
-              </View>
-              <Text style={styles.bioMetricValue}>{ai.skinHydration.tip}</Text>
-            </View>
-          </GlassCard>
+          </View>
         </View>
 
-        {/* ========================================================
+        {/* ═══════════════════════════════════════════════════════════
             CREATIVE ATMOSPHERIC SPARK
-            ======================================================== */}
-        <Text style={[styles.sectionTitle, styles.marginGap]}>CREATIVE ATMOSPHERIC SPARK</Text>
-        <View style={styles.marginGap}>
-          <GlassCard borderGlowColor="rgba(236, 72, 153, 0.25)">
-            <View style={styles.creativeHeader}>
-              <Sparkles size={18} color="#EC4899" />
-              <Text style={styles.creativeTitle}>CREATIVE SPARK</Text>
-            </View>
-            <Text style={styles.creativeContent}>{ai.creativeSpark}</Text>
-          </GlassCard>
+        ═══════════════════════════════════════════════════════════ */}
+        <SectionHeader label="CREATIVE ATMOSPHERIC SPARK" />
+        <View style={styles.section}>
+          <NativeAlert
+            variant="info"
+            icon={<Zap />}
+            title="Creative Spark"
+            description={ai.creativeSpark}
+          />
         </View>
 
-        {/* ========================================================
-            AI WEATHER JOURNAL & MOOD LOGGER (SQLite INTEGRATION)
-            ======================================================== */}
-        <Text style={[styles.sectionTitle, styles.marginGap]}>AI WEATHER JOURNAL & MEMORIES</Text>
-        <View style={styles.marginGap}>
-          <GlassCard borderGlowColor="rgba(255,255,255,0.08)">
+        {/* ═══════════════════════════════════════════════════════════
+            WEATHER JOURNAL & MOOD LOGGER
+        ═══════════════════════════════════════════════════════════ */}
+        <SectionHeader label="AI WEATHER JOURNAL & MEMORIES" />
+        <View style={styles.section}>
+          <View style={styles.card}>
             <View style={styles.journalHeader}>
-              <BookOpen size={16} color="#A855F7" />
+              <BookOpen size={16} color="#7C3AED" />
               <Text style={styles.journalTitle}>LOG WEATHER MOOD MEMORY</Text>
             </View>
+            <Text style={styles.journalSubtext}>How does the current atmosphere affect your mood?</Text>
 
-            {/* Mood selector buttons */}
-            <Text style={styles.journalSubtext}>How does current atmosphere affect your mood?</Text>
+            {/* Mood Selector */}
             <View style={styles.moodSelectorRow}>
               {[1, 2, 3, 4, 5].map((score) => (
                 <TouchableOpacity
@@ -266,8 +436,8 @@ export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
             </View>
 
             <TextInput
-              placeholder="Log local activity memories, outfit performance or comfort notes..."
-              placeholderTextColor="rgba(255, 255, 255, 0.4)"
+              placeholder="Log activity memories, outfit performance or comfort notes..."
+              placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={3}
               value={diaryNote}
@@ -277,18 +447,13 @@ export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
 
             {saveSuccess ? (
               <View style={styles.successMessage}>
-                <CheckCircle size={16} color="#22C55E" />
+                <CheckCircle size={16} color="#16A34A" />
                 <Text style={styles.successText}>Log entry saved in local SQLite storage!</Text>
               </View>
             ) : (
-              <PremiumButton
-                onPress={handleSaveJournal}
-                title="SAVE JOURNAL LOG"
-                style={styles.saveBtn}
-              />
+              <PremiumButton onPress={handleSaveJournal} title="SAVE JOURNAL LOG" style={styles.saveBtn} />
             )}
 
-            {/* List of recent weather memories */}
             {journalEntries.length > 0 && (
               <View style={styles.journalHistoryArea}>
                 <View style={styles.innerDivider} />
@@ -298,7 +463,7 @@ export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
                     <Text style={styles.entryEmoji}>{getMoodEmoji(entry.mood_score)}</Text>
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={styles.entryMeta}>
-                        {new Date(entry.timestamp).toLocaleDateString()} • {entry.temperature}°C • {entry.weather_condition}
+                        {new Date(entry.timestamp).toLocaleDateString()} · {entry.temperature}°C · {entry.weather_condition}
                       </Text>
                       <Text style={styles.entryText}>{entry.diary_note}</Text>
                     </View>
@@ -306,175 +471,186 @@ export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
                 ))}
               </View>
             )}
-          </GlassCard>
+          </View>
         </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles — light theme throughout
+// ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  solidBg: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 100,
+    paddingTop: 54,
+    paddingBottom: 110,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
+    gap: 14,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    flexShrink: 0,
   },
   headerTitle: {
-    color: '#FFF',
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  sectionTitle: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 12,
+    color: '#0F172A',
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginTop: 10,
   },
-  marginGap: {
-    marginTop: 14,
+  headerSub: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
   },
+
+  // Section label
+  sectionTitle: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    marginTop: 18,
+    marginBottom: 10,
+  },
+
+  // Generic content wrapper
+  section: {
+    gap: 0,
+  },
+
+  // White card for bar charts / tables
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  // Activity bars
   activityRow: {
     width: '100%',
   },
   activityMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 6,
   },
   activityName: {
-    color: '#FFF',
+    color: '#334155',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   activityValue: {
-    color: '#FFF',
     fontSize: 13,
     fontWeight: '800',
   },
   activityBarBg: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#F1F5F9',
     overflow: 'hidden',
   },
   activityBarFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
   },
-  sleepMetricsRow: {
+  activityDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 12,
+  },
+
+  // Sleep card
+  sleepRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   sleepScoreBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(34, 211, 238, 0.12)',
-    borderWidth: 1.5,
-    borderColor: '#22D3EE',
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 2,
+    borderColor: '#93C5FD',
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   sleepScoreNumber: {
-    color: '#22D3EE',
-    fontSize: 22,
+    color: '#2563EB',
+    fontSize: 20,
     fontWeight: '800',
   },
   sleepScoreLabel: {
-    color: '#22D3EE',
-    fontSize: 8,
-    fontWeight: '800',
+    color: '#2563EB',
+    fontSize: 7,
+    fontWeight: '900',
     letterSpacing: 1,
-    marginTop: -4,
-  },
-  sleepTextCol: {
-    flex: 1,
-    marginLeft: 16,
+    marginTop: -2,
   },
   sleepTitle: {
-    color: '#22D3EE',
+    color: '#2563EB',
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
     marginBottom: 4,
   },
-  sleepRecommendation: {
-    color: 'rgba(255,255,255,0.85)',
+  sleepRec: {
+    color: '#374151',
     fontSize: 13,
     lineHeight: 18,
+    fontWeight: '500',
   },
-  wardrobeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  wardrobeTitle: {
-    color: '#A855F7',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 2,
-    marginLeft: 8,
-  },
-  layerCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginBottom: 10,
-  },
-  layerNumber: {
-    color: '#A855F7',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  layerText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 2,
-  },
+
+  // Journal card
   journalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+    gap: 8,
   },
   journalTitle: {
-    color: '#A855F7',
+    color: '#7C3AED',
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 2,
-    marginLeft: 8,
+    letterSpacing: 1.5,
   },
   journalSubtext: {
-    color: 'rgba(255,255,255,0.4)',
+    color: '#64748B',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 12,
   },
   moodSelectorRow: {
@@ -486,27 +662,27 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   moodBtnActive: {
-    backgroundColor: 'rgba(168, 85, 247, 0.2)',
-    borderColor: '#A855F7',
+    backgroundColor: '#EDE9FE',
+    borderColor: '#7C3AED',
   },
   moodBtnEmoji: {
     fontSize: 22,
   },
   diaryInput: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 16,
-    color: '#FFF',
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    color: '#0F172A',
     fontSize: 14,
-    padding: 16,
+    padding: 14,
     height: 90,
     textAlignVertical: 'top',
     marginBottom: 14,
@@ -517,141 +693,59 @@ const styles = StyleSheet.create({
   successMessage: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    backgroundColor: '#F0FDF4',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
+    borderColor: '#BBF7D0',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
     justifyContent: 'center',
+    gap: 8,
   },
   successText: {
-    color: '#4ADE80',
+    color: '#16A34A',
     fontSize: 12,
     fontWeight: '700',
-    marginLeft: 8,
   },
   journalHistoryArea: {
-    marginTop: 10,
+    marginTop: 6,
   },
   innerDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    marginVertical: 16,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 14,
   },
   historyTitle: {
-    color: '#FFF',
-    fontSize: 11,
+    color: '#64748B',
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   entryRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderColor: '#E2E8F0',
     borderRadius: 12,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   entryEmoji: {
     fontSize: 20,
     marginTop: 2,
   },
   entryMeta: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   entryText: {
-    color: '#FFF',
+    color: '#1E293B',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     marginTop: 4,
     lineHeight: 18,
-  },
-  vibeBadge: {
-    backgroundColor: 'rgba(168, 85, 247, 0.12)',
-    borderColor: 'rgba(168, 85, 247, 0.3)',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  vibeBadgeLabel: {
-    color: '#A855F7',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  vibeBadgeValue: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  bioMetricItem: {
-    width: '100%',
-    paddingVertical: 4,
-  },
-  bioMetricHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    flexWrap: 'wrap',
-  },
-  bioMetricTitle: {
-    color: '#F59E0B',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-    marginLeft: 8,
-    marginRight: 'auto',
-  },
-  bioMetricBadge: {
-    fontSize: 9,
-    color: '#A855F7',
-    fontWeight: '800',
-    borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.3)',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    backgroundColor: 'rgba(168, 85, 247, 0.05)',
-  },
-  bioMetricValue: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
-  },
-  dividerLine: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginVertical: 14,
-  },
-  creativeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  creativeTitle: {
-    color: '#EC4899',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-    marginLeft: 8,
-  },
-  creativeContent: {
-    color: '#FFF',
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '600',
-    fontStyle: 'italic',
   },
 });

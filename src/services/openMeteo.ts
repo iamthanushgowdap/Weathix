@@ -56,7 +56,7 @@ export interface CityInfo {
 
 // Open-Meteo weather code mapper
 export const mapWeatherCode = (code: number, isDay: boolean = true): { text: string; theme: string } => {
-  if (code === 0) return { text: 'Clear Sky', theme: isDay ? 'Desert Gold' : 'Arctic Night' };
+  if (code === 0) return { text: isDay ? 'Clear Sky' : 'Clear Night', theme: 'Desert Gold' };
   if (code >= 1 && code <= 2) return { text: 'Partly Cloudy', theme: 'Polar Mist' };
   if (code === 3) return { text: 'Cloudy Sky', theme: 'Polar Mist' };
   if (code === 20) return { text: 'Windy Conditions', theme: 'Polar Mist' };
@@ -539,7 +539,7 @@ export const openMeteoService = {
   reverseGeocode: async (lat: number, lon: number): Promise<{ name: string; admin1: string; country: string }> => {
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=12&addressdetails=1`,
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=16&addressdetails=1`,
         { headers: { 'User-Agent': 'Weathix/1.0 weather-app' } }
       );
       const data = await res.json();
@@ -569,11 +569,8 @@ export const openMeteoService = {
    * Fetch complete weather metrics and AQI for specified coordinates
    */
   fetchWeather: async (lat: number, lon: number, cityName: string): Promise<{ weather: WeatherData; aqi: AqiData }> => {
-    // 1. Strict Privacy Shield: Round coordinates to 2 decimal places (~1.1 km accuracy)
-    // Ensures exact home addresses are never transmitted to external APIs
-    const fuzzedLat = Math.round(lat * 100) / 100;
-    const fuzzedLon = Math.round(lon * 100) / 100;
-    const cityKey = `${fuzzedLat.toFixed(3)}-${fuzzedLon.toFixed(3)}`;
+    // Use exact coordinates to query weather & AQI
+    const cityKey = `${lat.toFixed(3)}-${lon.toFixed(3)}`;
 
     try {
       const apiKey = process.env.EXPO_PUBLIC_VISUAL_CROSSING_KEY;
@@ -581,16 +578,16 @@ export const openMeteoService = {
         throw new Error('Visual Crossing API key not configured inside environment variables.');
       }
 
-      // 2. Fetch Visual Crossing Forecast (Securely with fuzzed coordinates)
-      const weatherUrl = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${fuzzedLat},${fuzzedLon}?key=${apiKey}&unitGroup=metric&include=hours,days,current`;
+      // 2. Fetch Visual Crossing Forecast (Exact coordinates)
+      const weatherUrl = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${lat},${lon}?key=${apiKey}&unitGroup=metric&include=hours,days,current`;
       const weatherRes = await fetch(weatherUrl);
       if (!weatherRes.ok) {
         throw new Error(`Visual Crossing API responded with status: ${weatherRes.status}`);
       }
       const wData = await weatherRes.json();
 
-      // 3. Fetch Air Quality from Open-Meteo (Keyless, free, fuzzed coordinates)
-      const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${fuzzedLat}&longitude=${fuzzedLon}&hourly=pm2_5,pm10,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
+      // 3. Fetch Air Quality from Open-Meteo (Exact coordinates)
+      const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10,nitrogen_dioxide,sulphur_dioxide,ozone,us_aqi`;
       const aqiRes = await fetch(aqiUrl);
       let aData: any = null;
       if (aqiRes.ok) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,9 +17,11 @@ import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
 import Svg, { Path as SvgPath } from 'react-native-svg';
 import { WebView } from 'react-native-webview';
 import { useWeatherStore } from '../store/globalStore';
+import { mmkvStorage } from '../database/mmkvStorage';
 import { computeWardrobeIntelligence } from '../services/localWardrobeAI';
 import { openMeteoService, CityInfo, mapWeatherCode, getWeatherIconUrl } from '../services/openMeteo';
 import LoadingRadar from '../../components/ui/loading-radar';
+import { WeatherPreloader } from '../../components/ui/weather-preloader';
 
 const waveHtml = `
 <!DOCTYPE html>
@@ -83,7 +85,30 @@ const waveHtml = `
 </html>
 `;
 import { weatherHaptics } from '../sensors/useHaptics';
-import { Search, ChevronRight } from 'lucide-react-native';
+import { Search, ChevronRight, MapPin, Clock, X, Trash2 } from 'lucide-react-native';
+
+const SEARCH_HISTORY_KEY = 'search-city-history';
+const MAX_HISTORY = 5;
+
+function loadSearchHistory(): CityInfo[] {
+  try {
+    const raw = mmkvStorage.getObject<CityInfo[]>(SEARCH_HISTORY_KEY);
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSearchHistory(history: CityInfo[]): void {
+  try {
+    mmkvStorage.setObject(SEARCH_HISTORY_KEY, history.slice(0, MAX_HISTORY));
+  } catch {}
+}
+
+function addCityToHistory(city: CityInfo, history: CityInfo[]): CityInfo[] {
+  const filtered = history.filter((c) => c.id !== city.id);
+  return [city, ...filtered].slice(0, MAX_HISTORY);
+}
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -112,16 +137,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     isLoading,
     isOffline,
     tempUnit,
+    windUnit,
+    savedCities,
+    deleteCity,
     setSelectedCity,
     saveCity,
     fetchWeather,
+    requestDeviceLocation,
   } = useWeatherStore();
+
+  const formatWindSpeed = (speedKph: number) => {
+    if (windUnit === 'mph') {
+      return `${Math.round(speedKph * 0.621371)} mph`;
+    }
+    if (windUnit === 'mps') {
+      return `${Math.round(speedKph * 0.277778 * 10) / 10} m/s`;
+    }
+    return `${speedKph} km/h`;
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<CityInfo[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<CityInfo[]>(() => loadSearchHistory());
+  const [isLocating, setIsLocating] = useState(false);
 
   const arrowTranslateX = useSharedValue(0);
 
@@ -202,10 +243,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const handleSelectCity = async (city: CityInfo) => {
     weatherHaptics.selection();
+    // Persist to search history
+    const updated = addCityToHistory(city, searchHistory);
+    setSearchHistory(updated);
+    saveSearchHistory(updated);
     setSearchQuery('');
     setSearchResults([]);
     setIsSearchOpen(false);
     await setSelectedCity(city);
+  };
+
+  const handleRemoveHistory = (id: string) => {
+    const updated = searchHistory.filter((c) => c.id !== id);
+    setSearchHistory(updated);
+    saveSearchHistory(updated);
+  };
+
+  const handleUseCurrentLocation = async () => {
+    weatherHaptics.selection();
+    setIsLocating(true);
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    try {
+      await requestDeviceLocation();
+    } finally {
+      setIsLocating(false);
+    }
   };
 
   const handleSaveCity = (city: CityInfo) => {
@@ -242,15 +306,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }, [weatherData]);
 
   // Theme-aware color system
+  // Desert Gold (Clear Sky) is always a warm/light theme — white text over orange
+  // All other night/dark themes are listed explicitly
   const isDarkTheme =
-    !weatherData?.isDay ||
     weatherTheme === 'Arctic Night' ||
     weatherTheme === 'Midnight Storm' ||
     weatherTheme === 'Aurora Dream' ||
     weatherTheme === 'Monsoon Slate' ||
     weatherTheme === 'Lush Forest' ||
     weatherTheme === 'Tropical Cyan' ||
-    weatherTheme === 'Sunset Ember';
+    weatherTheme === 'Sunset Ember' ||
+    weatherTheme === 'Polar Mist' ||
+    (!weatherData?.isDay && weatherTheme !== 'Desert Gold');
 
   // Returns the Google Weather icon URL for a given WMO condition code,
   // automatically applying dark/light mode based on current theme.
@@ -269,10 +336,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return (
       <View style={styles.container}>
         <View style={styles.loaderArea}>
-          <LoadingRadar />
-          <Text style={[styles.loaderText, { color: mainTextColor, marginTop: 24 }]}>
-            CALIBRATING...
-          </Text>
+          <WeatherPreloader />
         </View>
       </View>
     );
@@ -287,6 +351,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   return (
     <View style={styles.container}>
+
+      {/* ========================================================
+          GPS LOCATING FULL-SCREEN OVERLAY
+          ======================================================== */}
+      {isLocating && (
+        <View style={styles.locatingOverlay}>
+          <WeatherPreloader />
+        </View>
+      )}
 
       {/* ========================================================
           SEARCH TOGGLE (top-right corner)
@@ -306,6 +379,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           ======================================================== */}
       {isSearchOpen && (
         <View style={styles.searchOverlay}>
+          {/* Search input row */}
           <View style={[styles.searchBox, { backgroundColor: isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255,255,255,0.85)' }]}>
             <Search size={14} color={isDarkTheme ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)'} />
             <TextInput
@@ -318,18 +392,80 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             />
             {isSearching && <ActivityIndicator size="small" color={mainTextColor} />}
           </View>
-          {searchResults.map((city) => (
-            <View key={city.id} style={styles.searchResultRow}>
-              <TouchableOpacity style={{ flex: 1 }} onPress={() => handleSelectCity(city)}>
-                <Text style={styles.searchResultText}>
-                  {city.name}, {city.admin1 ? `${city.admin1}, ` : ''}{city.country}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleSaveCity(city)} style={styles.addCityBtn}>
-                <Text style={styles.plusText}>+</Text>
-              </TouchableOpacity>
+
+          {/* Use Current Location — always visible at top */}
+          <TouchableOpacity style={styles.currentLocationRow} onPress={handleUseCurrentLocation} activeOpacity={0.75}>
+            <View style={styles.currentLocationIcon}>
+              <MapPin size={14} color="#22D3EE" />
             </View>
-          ))}
+            <Text style={styles.currentLocationText}>
+              {isLocating ? 'Detecting location…' : '📍  Use Current Location'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <>
+              <Text style={styles.searchSectionLabel}>RESULTS</Text>
+              {searchResults.map((city) => (
+                <View key={city.id} style={styles.searchResultRow}>
+                  <TouchableOpacity style={{ flex: 1 }} onPress={() => handleSelectCity(city)}>
+                    <Text style={styles.searchResultText}>
+                      {city.name}{city.admin1 ? `, ${city.admin1}` : ''}, {city.country}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleSaveCity(city)} style={styles.addCityBtn}>
+                    <Text style={styles.plusText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </>
+          )}
+
+          {/* Saved Locations — shown when no search query and savedCities exists */}
+          {searchQuery.length === 0 && savedCities.length > 0 && (
+            <>
+              <View style={styles.historyHeaderRow}>
+                <MapPin size={11} color="#22D3EE" />
+                <Text style={[styles.searchSectionLabel, { color: '#22D3EE', marginLeft: 6 }]}>SAVED LOCATIONS</Text>
+              </View>
+              {savedCities.map((city) => (
+                <View key={city.id} style={styles.searchResultRow}>
+                  <TouchableOpacity style={{ flex: 1 }} onPress={() => handleSelectCity(city)}>
+                    <Text style={styles.searchResultText}>
+                      {city.name}{city.admin1 ? `, ${city.admin1}` : ''}, {city.country}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteCity(city.id)} style={styles.addCityBtn}>
+                    <Trash2 size={13} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <View style={{ height: 16 }} />
+            </>
+          )}
+
+          {/* Search History — shown when no search query */}
+          {searchQuery.length === 0 && searchHistory.length > 0 && (
+            <>
+              <View style={styles.historyHeaderRow}>
+                <Clock size={11} color="rgba(255,255,255,0.4)" />
+                <Text style={styles.searchSectionLabel}>RECENT SEARCHES</Text>
+              </View>
+              {searchHistory.map((city) => (
+                <View key={city.id} style={styles.searchResultRow}>
+                  <TouchableOpacity style={{ flex: 1 }} onPress={() => handleSelectCity(city)}>
+                    <Text style={styles.searchResultText}>
+                      {city.name}{city.admin1 ? `, ${city.admin1}` : ''}, {city.country}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleRemoveHistory(city.id)} style={styles.addCityBtn}>
+                    <X size={14} color="rgba(255,255,255,0.4)" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </>
+          )}
         </View>
       )}
 
@@ -363,7 +499,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             {selectedCity.name}
           </Text>
           <Text style={[styles.weatherSubInfo, { color: mainTextColor }]}>
-            {lo} / {hi} • {getWindEmoji(weatherData.windSpeed)} {weatherData.windSpeed} km/h
+            {lo} / {hi} • {getWindEmoji(weatherData.windSpeed)} {formatWindSpeed(weatherData.windSpeed)}
           </Text>
         </View>
 
@@ -664,6 +800,57 @@ const styles = StyleSheet.create({
     color: '#22D3EE',
     fontSize: 18,
     fontWeight: '700',
+  },
+  currentLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+    marginBottom: 2,
+  },
+  currentLocationIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: 'rgba(34, 211, 238, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 211, 238, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  currentLocationText: {
+    color: '#22D3EE',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  searchSectionLabel: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  historyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+
+  // ===== GPS LOCATING OVERLAY =====
+  locatingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
   },
 
   // ===== HERO =====
