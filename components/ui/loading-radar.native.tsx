@@ -2,7 +2,11 @@ import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Animated } from "react-native";
 import Svg, { Path, Defs, RadialGradient, Stop, Filter, FeGaussianBlur } from "react-native-svg";
 
-const LoadingRadar: React.FC = () => {
+interface LoadingRadarProps {
+  size?: number;
+}
+
+const LoadingRadar: React.FC<LoadingRadarProps> = ({ size = 150 }) => {
   const rotation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -20,33 +24,72 @@ const LoadingRadar: React.FC = () => {
     outputRange: ["0deg", "360deg"],
   });
 
+  const innerDashedRingInset = size * 0.133;
+  const centerDashedCircleSize = size * 0.333;
+  const centerCoord = size / 2;
+
+  const r = size / 2;
+  const x2 = centerCoord + r * 0.5736;
+  const y2 = centerCoord - r * 0.8192;
+
   return (
-    <View style={styles.container}>
+    <View 
+      style={[
+        styles.container, 
+        { 
+          width: size, 
+          height: size, 
+          borderRadius: size / 2,
+        }
+      ]}
+    >
       {/* inner dashed ring */}
-      <View style={styles.dashedRing} />
+      <View 
+        style={[
+          styles.dashedRing,
+          {
+            top: innerDashedRingInset,
+            bottom: innerDashedRingInset,
+            left: innerDashedRingInset,
+            right: innerDashedRingInset,
+            borderRadius: (size - 2 * innerDashedRingInset) / 2,
+          }
+        ]}
+      />
 
       {/* center dashed circle */}
-      <View style={styles.dashedCenter} />
+      <View 
+        style={[
+          styles.dashedCenter,
+          {
+            width: centerDashedCircleSize,
+            height: centerDashedCircleSize,
+            borderRadius: centerDashedCircleSize / 2,
+          }
+        ]}
+      />
 
       {/* radar sweep */}
       <Animated.View
         style={[
           styles.sweepContainer,
           {
+            width: size,
+            height: size,
             transform: [{ rotate: spin }],
           },
         ]}
       >
-        <Svg width={150} height={150} viewBox="0 0 150 150" style={StyleSheet.absoluteFill}>
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={StyleSheet.absoluteFill}>
           <Defs>
             <RadialGradient
               id="glowGrad"
-              cx="75"
-              cy="75"
-              rx="75"
-              ry="75"
-              fx="75"
-              fy="75"
+              cx={centerCoord}
+              cy={centerCoord}
+              rx={r}
+              ry={r}
+              fx={centerCoord}
+              fy={centerCoord}
               gradientUnits="userSpaceOnUse"
             >
               <Stop offset="0%" stopColor="seagreen" stopOpacity={0.8} />
@@ -54,13 +97,13 @@ const LoadingRadar: React.FC = () => {
               <Stop offset="100%" stopColor="seagreen" stopOpacity={0} />
             </RadialGradient>
             <Filter id="blur">
-              <FeGaussianBlur stdDeviation="5" />
+              <FeGaussianBlur stdDeviation={size * 0.033} />
             </Filter>
           </Defs>
           
           {/* Seagreen Glow Sector rotated -55 deg (behind the sweep line) */}
           <Path
-            d="M 75 75 L 150 75 A 75 75 0 0 0 118.02 13.56 Z"
+            d={`M ${centerCoord} ${centerCoord} L ${size} ${centerCoord} A ${r} ${r} 0 0 0 ${x2} ${y2} Z`}
             fill="url(#glowGrad)"
             filter="url(#blur)"
             opacity={0.85}
@@ -68,7 +111,7 @@ const LoadingRadar: React.FC = () => {
           
           {/* White dashed line */}
           <Path
-            d="M 75 75 L 150 75"
+            d={`M ${centerCoord} ${centerCoord} L ${size} ${centerCoord}`}
             stroke="white"
             strokeWidth={1}
             strokeDasharray="4,4"
@@ -82,9 +125,6 @@ const LoadingRadar: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     position: "relative",
-    width: 150,
-    height: 150,
-    borderRadius: 75,
     borderWidth: 1,
     borderColor: "#333",
     backgroundColor: "rgba(0,0,0,0.55)",
@@ -101,28 +141,18 @@ const styles = StyleSheet.create({
   },
   dashedRing: {
     position: "absolute",
-    top: 20,
-    bottom: 20,
-    left: 20,
-    right: 20,
-    borderRadius: 55,
     borderWidth: 1,
     borderStyle: "dashed",
     borderColor: "#444",
   },
   dashedCenter: {
     position: "absolute",
-    width: 50,
-    height: 50,
-    borderRadius: 25,
     borderWidth: 1,
     borderStyle: "dashed",
     borderColor: "#444",
   },
   sweepContainer: {
     position: "absolute",
-    width: 150,
-    height: 150,
     justifyContent: "center",
     alignItems: "center",
   },

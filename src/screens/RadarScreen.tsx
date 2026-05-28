@@ -17,6 +17,7 @@ const RadarWebScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
 
   const cx = width / 2;
   const cy = height / 2.3;
+  const radarSize = Math.min(270, Math.max(220, width * 0.72));
 
   const handleZoomIn = () => {
     weatherHaptics.selection();
@@ -33,22 +34,35 @@ const RadarWebScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
       <View style={[StyleSheet.absoluteFill, styles.bgOverlay]} />
 
       {/* Centered Radar */}
-      <View style={[styles.centerContainer, { left: cx - 75, top: cy - 75, transform: [{ scale }] } as any]}>
-        <LoadingRadar />
+      <View 
+        style={[
+          styles.centerContainer, 
+          { 
+            width: radarSize,
+            height: radarSize,
+            left: cx - radarSize / 2, 
+            top: cy - radarSize / 2, 
+            transform: [{ scale }] 
+          } as any
+        ]}
+      >
+        <LoadingRadar size={radarSize} />
       </View>
 
       {/* Interactive Controls Overlay */}
       <View style={styles.hudOverlay}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-            <ArrowLeft color="#FFF" size={24} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>GPU RADAR STATION</Text>
-        </View>
+        <View style={styles.topHudContainer}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+              <ArrowLeft color="#FFF" size={24} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>GPU RADAR STATION</Text>
+          </View>
 
-        <View style={styles.hudCenterCompass}>
-          <Compass size={24} color="rgba(255, 255, 255, 0.6)" />
-          <Text style={styles.compassLabel}>SWEEPER SWEEPING...</Text>
+          <View style={styles.hudCenterCompass}>
+            <Compass size={18} color="#22D3EE" />
+            <Text style={styles.compassLabel}>SWEEPER ACTIVE • SCANNING RANGE</Text>
+          </View>
         </View>
 
         {/* Zoom Controls & Diagnostic Card */}
@@ -70,6 +84,17 @@ const RadarWebScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
                 </TouchableOpacity>
               </View>
             </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.instructionsContainer}>
+              <Text style={styles.instructionsHeader}>HOW DOPPLER RADAR CALCULATIONS WORK</Text>
+              <Text style={styles.instructionsText}>
+                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Active Sweeper:</Text> Emits radial pulse waves to calculate storm cell distance and precipitation intensity in real-time.{"\n"}
+                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Reflectivity Return:</Text> Faded seagreen trail represents signals bounced back from clouds. Darker greens indicate denser moisture.{"\n"}
+                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Zoom Controls:</Text> Adjust sweep scale. Higher zoom reveals storm micro-structures; lower zoom extends peripheral range.
+              </Text>
+            </View>
           </GlassCard>
         </View>
       </View>
@@ -84,6 +109,7 @@ const RadarNativeScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
 
   const cx = width / 2;
   const cy = height / 2.3;
+  const radarSize = Math.min(270, Math.max(220, width * 0.72));
 
   const handleZoomIn = () => {
     weatherHaptics.selection();
@@ -106,21 +132,34 @@ const RadarNativeScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
       <View style={[StyleSheet.absoluteFill, styles.bgOverlay]} />
 
       {/* Centered Radar */}
-      <Animated.View style={[styles.centerContainer, { left: cx - 75, top: cy - 75 }, animatedScaleStyle]}>
-        <LoadingRadar />
+      <Animated.View 
+        style={[
+          styles.centerContainer, 
+          { 
+            width: radarSize,
+            height: radarSize,
+            left: cx - radarSize / 2, 
+            top: cy - radarSize / 2 
+          }, 
+          animatedScaleStyle
+        ]}
+      >
+        <LoadingRadar size={radarSize} />
       </Animated.View>
 
       <View style={styles.hudOverlay}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-            <ArrowLeft color="#FFF" size={24} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>GPU RADAR STATION</Text>
-        </View>
+        <View style={styles.topHudContainer}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+              <ArrowLeft color="#FFF" size={24} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>GPU RADAR STATION</Text>
+          </View>
 
-        <View style={styles.hudCenterCompass}>
-          <Compass size={24} color="rgba(255, 255, 255, 0.6)" />
-          <Text style={styles.compassLabel}>SWEEPER SWEEPING...</Text>
+          <View style={styles.hudCenterCompass}>
+            <Compass size={18} color="#22D3EE" />
+            <Text style={styles.compassLabel}>SWEEPER ACTIVE • SCANNING RANGE</Text>
+          </View>
         </View>
 
         <View style={styles.bottomCardWrapper}>
@@ -140,6 +179,17 @@ const RadarNativeScreen: React.FC<RadarScreenProps> = ({ onBack }) => {
                   <ZoomOut color="#FFF" size={20} />
                 </TouchableOpacity>
               </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.instructionsContainer}>
+              <Text style={styles.instructionsHeader}>HOW DOPPLER RADAR CALCULATIONS WORK</Text>
+              <Text style={styles.instructionsText}>
+                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Active Sweeper:</Text> Emits radial pulse waves to calculate storm cell distance and precipitation intensity in real-time.{"\n"}
+                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Reflectivity Return:</Text> Faded seagreen trail represents signals bounced back from clouds. Darker greens indicate denser moisture.{"\n"}
+                • <Text style={{ color: '#22D3EE', fontWeight: '700' }}>Zoom Controls:</Text> Adjust sweep scale. Higher zoom reveals storm micro-structures; lower zoom extends peripheral range.
+              </Text>
             </View>
           </GlassCard>
         </View>
@@ -163,8 +213,6 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     position: 'absolute',
-    width: 150,
-    height: 150,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
@@ -176,6 +224,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingHorizontal: 20,
     zIndex: 5,
+  },
+  topHudContainer: {
+    width: '100%',
   },
   header: {
     flexDirection: 'row',
@@ -199,15 +250,24 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   hudCenterCompass: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -80,
+    justifyContent: 'center',
+    marginTop: 14,
+    backgroundColor: 'rgba(34, 211, 238, 0.05)',
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 211, 238, 0.15)',
   },
   compassLabel: {
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: '#22D3EE',
     fontSize: 10,
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     fontWeight: '800',
-    marginTop: 8,
+    marginLeft: 6,
   },
   bottomCardWrapper: {
     width: '100%',
@@ -248,5 +308,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginVertical: 12,
+  },
+  instructionsContainer: {
+    marginTop: 2,
+  },
+  instructionsHeader: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    marginBottom: 6,
+  },
+  instructionsText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '500',
+  },
 });
+
 
