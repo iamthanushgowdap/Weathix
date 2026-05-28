@@ -233,14 +233,6 @@ interface AiDashboardProps {
 
 export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
   const { weatherData, aqiData } = useWeatherStore();
-  const [diaryNote, setDiaryNote] = useState('');
-  const [moodScore, setMoodScore] = useState(3);
-  const [journalEntries, setJournalEntries] = useState<any[]>([]);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  useEffect(() => {
-    setJournalEntries(dbOperations.getJournalEntries());
-  }, []);
 
   if (!weatherData || !aqiData) return null;
 
@@ -260,22 +252,6 @@ export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
     weatherData.isDay,
     cloudDensityVal
   );
-
-  const handleSaveJournal = () => {
-    if (!diaryNote.trim()) return;
-    weatherHaptics.selection();
-    dbOperations.saveJournalEntry(weatherData.conditionText, weatherData.temp, moodScore, diaryNote);
-    setJournalEntries(dbOperations.getJournalEntries());
-    setDiaryNote('');
-    setMoodScore(3);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2000);
-  };
-
-  const getMoodEmoji = (score: number) => {
-    const emojis = ['😢', '😕', '😐', '🙂', '😊'];
-    return emojis[score - 1] || '😐';
-  };
 
   // Derive dynamic alert messages from AI data
   const uvAlertVariant = weatherData.uvIndex >= 8 ? 'destructive' : weatherData.uvIndex >= 5 ? 'warning' : 'success';
@@ -408,70 +384,6 @@ export const AiDashboard: React.FC<AiDashboardProps> = ({ onBack }) => {
             title="Creative Spark"
             description={ai.creativeSpark}
           />
-        </View>
-
-        {/* ═══════════════════════════════════════════════════════════
-            WEATHER JOURNAL & MOOD LOGGER
-        ═══════════════════════════════════════════════════════════ */}
-        <SectionHeader label="AI WEATHER JOURNAL & MEMORIES" />
-        <View style={styles.section}>
-          <View style={styles.card}>
-            <View style={styles.journalHeader}>
-              <BookOpen size={16} color="#7C3AED" />
-              <Text style={styles.journalTitle}>LOG WEATHER MOOD MEMORY</Text>
-            </View>
-            <Text style={styles.journalSubtext}>How does the current atmosphere affect your mood?</Text>
-
-            {/* Mood Selector */}
-            <View style={styles.moodSelectorRow}>
-              {[1, 2, 3, 4, 5].map((score) => (
-                <TouchableOpacity
-                  key={score}
-                  style={[styles.moodBtn, moodScore === score && styles.moodBtnActive]}
-                  onPress={() => setMoodScore(score)}
-                >
-                  <Text style={styles.moodBtnEmoji}>{getMoodEmoji(score)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TextInput
-              placeholder="Log activity memories, outfit performance or comfort notes..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={3}
-              value={diaryNote}
-              onChangeText={setDiaryNote}
-              style={styles.diaryInput}
-            />
-
-            {saveSuccess ? (
-              <View style={styles.successMessage}>
-                <CheckCircle size={16} color="#16A34A" />
-                <Text style={styles.successText}>Log entry saved in local SQLite storage!</Text>
-              </View>
-            ) : (
-              <PremiumButton onPress={handleSaveJournal} title="SAVE JOURNAL LOG" style={styles.saveBtn} />
-            )}
-
-            {journalEntries.length > 0 && (
-              <View style={styles.journalHistoryArea}>
-                <View style={styles.innerDivider} />
-                <Text style={styles.historyTitle}>RECENT MOOD CORRELATIONS</Text>
-                {journalEntries.slice(0, 3).map((entry) => (
-                  <View key={entry.id} style={styles.entryRow}>
-                    <Text style={styles.entryEmoji}>{getMoodEmoji(entry.mood_score)}</Text>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={styles.entryMeta}>
-                        {new Date(entry.timestamp).toLocaleDateString()} · {entry.temperature}°C · {entry.weather_condition}
-                      </Text>
-                      <Text style={styles.entryText}>{entry.diary_note}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
         </View>
 
         <View style={{ height: 40 }} />
