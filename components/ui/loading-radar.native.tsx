@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Animated } from "react-native";
+import Svg, { Path, Defs, RadialGradient, Stop, Filter, FeGaussianBlur } from "react-native-svg";
 
 const LoadingRadar: React.FC = () => {
   const rotation = useRef(new Animated.Value(0)).current;
@@ -36,8 +37,43 @@ const LoadingRadar: React.FC = () => {
           },
         ]}
       >
-        <View style={styles.sweepLine} />
-        <View style={styles.sweepGlow} />
+        <Svg width={150} height={150} viewBox="0 0 150 150" style={StyleSheet.absoluteFill}>
+          <Defs>
+            <RadialGradient
+              id="glowGrad"
+              cx="75"
+              cy="75"
+              rx="75"
+              ry="75"
+              fx="75"
+              fy="75"
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0%" stopColor="seagreen" stopOpacity={0.8} />
+              <Stop offset="50%" stopColor="seagreen" stopOpacity={0.35} />
+              <Stop offset="100%" stopColor="seagreen" stopOpacity={0} />
+            </RadialGradient>
+            <Filter id="blur">
+              <FeGaussianBlur stdDeviation="5" />
+            </Filter>
+          </Defs>
+          
+          {/* Seagreen Glow Sector rotated -55 deg (behind the sweep line) */}
+          <Path
+            d="M 75 75 L 150 75 A 75 75 0 0 0 118.02 13.56 Z"
+            fill="url(#glowGrad)"
+            filter="url(#blur)"
+            opacity={0.85}
+          />
+          
+          {/* White dashed line */}
+          <Path
+            d="M 75 75 L 150 75"
+            stroke="white"
+            strokeWidth={1}
+            strokeDasharray="4,4"
+          />
+        </Svg>
       </Animated.View>
     </View>
   );
@@ -55,6 +91,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
+    // iOS shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 25 },
+    shadowOpacity: 0.55,
+    shadowRadius: 75,
+    // Android shadow
+    elevation: 8,
   },
   dashedRing: {
     position: "absolute",
@@ -78,29 +121,12 @@ const styles = StyleSheet.create({
   },
   sweepContainer: {
     position: "absolute",
-    top: "50%",
-    left: "50%",
-    width: 75,
+    width: 150,
     height: 150,
-    overflow: "visible",
-  },
-  sweepLine: {
-    width: 75,
-    height: 1,
-    borderStyle: "dashed",
-    borderWidth: 0.5,
-    borderColor: "#fff",
-  },
-  sweepGlow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 75,
-    height: 75,
-    backgroundColor: "seagreen",
-    opacity: 0.25,
-    borderRadius: 37,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
 export default LoadingRadar;
+
