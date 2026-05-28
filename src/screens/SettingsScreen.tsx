@@ -146,51 +146,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </GlassCard>
       </View>
 
-      {/* ========================================================
-          DEVELOPER / SYSTEM DIAGNOSTICS CONTROL
-          ======================================================== */}
-      <Text style={[styles.sectionTitle, styles.marginGap]}>SYSTEM DIAGNOSTICS</Text>
-      <View style={styles.marginGap}>
-        <TouchableOpacity
-          onPress={() => {
-            weatherHaptics.selection();
-            onResetOnboarding?.();
-          }}
-          style={styles.optionWrapper}
-        >
-          <GlassCard borderGlowColor="rgba(239, 68, 68, 0.2)">
-            <View style={styles.optionRow}>
-              <View>
-                <Text style={[styles.optionTitle, { color: '#EF4444' }]}>Replay Onboarding Splash</Text>
-                <Text style={styles.optionDesc}>Reset system synchronization and play the 3D globe splash</Text>
-              </View>
-            </View>
-          </GlassCard>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={async () => {
-            weatherHaptics.selection();
-            // Force weather loading state preview by clearing active weatherData
-            useWeatherStore.setState({ weatherData: null, isLoading: true });
-            // Let the loader render for 3 seconds so the user can verify it, then re-fetch
-            setTimeout(() => {
-              useWeatherStore.getState().fetchWeather();
-            }, 3000);
-            onBack();
-          }}
-          style={[styles.optionWrapper, { marginTop: 12 }]}
-        >
-          <GlassCard borderGlowColor="rgba(168, 85, 247, 0.2)">
-            <View style={styles.optionRow}>
-              <View>
-                <Text style={[styles.optionTitle, { color: '#A855F7' }]}>Test Weather Loading Screen</Text>
-                <Text style={styles.optionDesc}>Clears cached weather data to display the animated preloader for 3s</Text>
-              </View>
-            </View>
-          </GlassCard>
-        </TouchableOpacity>
-      </View>
     </ScrollView>
   );
 };
